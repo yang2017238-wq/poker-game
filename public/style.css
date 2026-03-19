@@ -1,0 +1,113 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background: #0b4d2b;
+  color: #fff;
+  font-family: Arial, sans-serif;
+}
+
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+h1, h2 {
+  margin-top: 0;
+}
+
+.panel {
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+input, button {
+  width: 100%;
+  padding: 12px;
+  margin: 6px 0;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+}
+
+button {
+  background: #ffd54f;
+  color: #222;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.92;
+}
+
+.status {
+  margin-top: 8px;
+  color: #b3ffcc;
+}
+
+.error {
+  margin-top: 8px;
+  color: #ffb3b3;
+  font-weight: bold;
+}
+
+.winner {
+  margin-top: 8px;
+  color: #ffe082;
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.players {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.player-card {
+  padding: 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cards-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 50px;
+}
+
+.card {
+  display: inline-block;
+  min-width: 48px;
+  text-align: center;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #fff;
+  color: #111;
+  font-weight: bold;
+}
+
+.actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+#log {
+  margin: 0;
+  padding-left: 20px;
+}
+
+@media (min-width: 768px) {
+  .actions {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
