@@ -38,10 +38,17 @@ const revealHintEl = document.getElementById("revealHint");
 const dockStageEl = document.getElementById("dockStage");
 const dockCallEl = document.getElementById("dockCall");
 const dockRaiseEl = document.getElementById("dockRaise");
+const settlementModalEl = document.getElementById("settlementModal");
+const settlementTitleEl = document.getElementById("settlementTitle");
+const settlementSummaryEl = document.getElementById("settlementSummary");
+const settlementListEl = document.getElementById("settlementList");
+const closeSettlementBtn = document.getElementById("closeSettlementBtn");
 
 let currentRoomState = null;
 let myPrivateHand = [];
 let turnFlashTimer = null;
+let lastTurnPlayerId = null;
+let lastSettlementKey = "";
 
 function getSavedName() {
   return window.localStorage.getItem("poker-player-name") || "";
@@ -106,6 +113,7 @@ function renderPlayers() {
     const isMe = player.id === socket.id;
     const hiddenCards = Array.from({ length: player.handCount || 2 }, () => "🂠");
     const cards = isMe ? myPrivateHand : hiddenCards;
+    const avatarText = player.name.slice(0, 2).toUpperCase();
 
     seat.className = [
       "seat",
@@ -118,8 +126,14 @@ function renderPlayers() {
 
     seat.innerHTML = `
       <div class="seat-topline">
-        <strong>${player.name}${isMe ? " · 你" : ""}</strong>
-        <span>${player.chips}</span>
+        <div class="seat-identity">
+          <div class="seat-avatar">${avatarText}</div>
+          <div class="seat-namebox">
+            <strong>${player.name}${isMe ? " · 你" : ""}</strong>
+            <span class="seat-stack">筹码 ${player.chips}</span>
+          </div>
+        </div>
+        <span class="seat-chipbet">下注 ${player.currentBet}</span>
       </div>
       <div class="seat-badges">
         ${player.isDealer ? `<span class="badge">D</span>` : ""}
@@ -131,7 +145,7 @@ function renderPlayers() {
       </div>
       <div class="seat-cards">${cards.map(renderMiniCard).join("")}</div>
       <div class="seat-meta">
-        <span>本轮下注 ${player.currentBet}</span>
+        <span>总投入 ${player.totalContribution}</span>
         <span>${player.lastAction || "等待"}</span>
       </div>
     `;
@@ -172,6 +186,80 @@ function renderRevealedHands() {
   `).join("");
 }
 
+function hideSettlementModal() {
+  settlementModalEl.classList.remove("visible");
+}
+
+function maybeShowSettlementModal() {
+  const roomId = currentRoomState?.roomId || "";
+  const winnerText = currentRoomState?.winnerText || "";
+  const revealedHands = currentRoomState?.revealedHands || [];
+  const settlementKey = `${roomId}:${winnerText}:${revealedHands.map(item => `${item.playerId}-${item.cards.join("")}`).join("|")}`;
+
+  if (!winnerText || !revealedHands.length) {
+    if (currentRoomState?.gameStarted) {
+      hideSettlementModal();
+    }
+    return;
+  }
+
+  if (settlementKey === lastSettlementKey) {
+    return;
+  }
+
+  lastSettlementKey = settlementKey;
+  settlementTitleEl.textContent = `第 ${currentRoomState.handNumber || 0} 局结算`;
+  settlementSummaryEl.textContent = winnerText;
+  settlementListEl.innerHTML = revealedHands.map(item => `
+    <article class="settlement-item">
+      <div class="settlement-item-top">
+        <strong>${item.name}</strong>
+        <span>${item.handName}</span>
+      </div>
+      <div class="cards-row revealed-row">${item.cards.map(formatCard).join("")}</div>
+    </article>
+  `).join("");
+  settlementModalEl.classList.add("visible");
+}
+
+function playTurnAlert() {
+  if (typeof window === "undefined" || typeof window.AudioContext === "undefined") {
+    return;
+  }
+
+  const context = new window.AudioContext();
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.type = "triangle";
+  oscillator.frequency.value = 880;
+  gain.gain.value = 0.03;
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start();
+  oscillator.stop(context.currentTime + 0.16);
+  oscillator.onended = () => {
+    context.close();
+  };
+}
+
+function notifyTurnChange(me, myTurn) {
+  const activePlayer = currentRoomState?.players?.find(player => player.isCurrentTurn);
+  const activeId = activePlayer?.id || null;
+  if (!currentRoomState?.gameStarted || !activeId || activeId === lastTurnPlayerId) {
+    lastTurnPlayerId = activeId;
+    return;
+  }
+
+  if (myTurn && me) {
+    playTurnAlert();
+    if (navigator.vibrate) {
+      navigator.vibrate([120, 60, 120]);
+    }
+  }
+
+  lastTurnPlayerId = activeId;
+}
+
 function updateTurnBanner(me, myTurn) {
   if (!currentRoomState) {
     turnBannerEl.classList.remove("visible", "mine");
@@ -208,6 +296,8 @@ function updateTurnBanner(me, myTurn) {
       ? `${activePlayer.name} 操作中`
       : "公网德州扑克牌桌";
   }
+
+  notifyTurnChange(me, myTurn);
 }
 
 function updateHeaderInfo() {
@@ -288,6 +378,7 @@ function renderRoom() {
   renderLogs();
   renderRevealedHands();
   updateActionPanel();
+  maybeShowSettlementModal();
 }
 
 function sendAction(action, amount) {
@@ -368,6 +459,16 @@ socket.on("privateHand", hand => {
 socket.on("errorMessage", message => {
   alert(message);
 });
+
+closeSettlementBtn.onclick = () => {
+  hideSettlementModal();
+};
+
+settlementModalEl.onclick = event => {
+  if (event.target === settlementModalEl) {
+    hideSettlementModal();
+  }
+};
 
 function bootstrapFromUrl() {
   playerNameInput.value = getSavedName();

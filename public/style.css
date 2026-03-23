@@ -150,6 +150,44 @@ input {
   gap: 12px;
 }
 
+.seat-identity {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.seat-namebox {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.seat-namebox strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.seat-avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #1d1406;
+  font-weight: 700;
+  background: linear-gradient(135deg, #f5d79b, #c99231);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.seat-stack,
+.seat-chipbet {
+  color: var(--muted);
+  font-size: 12px;
+}
+
 .table-meta {
   display: flex;
   gap: 12px;
@@ -270,6 +308,70 @@ input {
 .winner-banner.visible {
   opacity: 1;
   transform: translateY(0);
+}
+
+.settlement-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(4, 9, 12, 0.7);
+  backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: 180ms ease;
+}
+
+.settlement-modal.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.settlement-card {
+  width: min(820px, 100%);
+  max-height: min(88vh, 760px);
+  overflow: auto;
+  padding: 20px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(18, 35, 43, 0.98), rgba(8, 18, 24, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--shadow);
+}
+
+.settlement-head,
+.settlement-item-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.settlement-close {
+  border: 0;
+  padding: 10px 14px;
+  border-radius: 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.1);
+  cursor: pointer;
+}
+
+.settlement-summary {
+  color: var(--gold);
+}
+
+.settlement-list {
+  display: grid;
+  gap: 12px;
+}
+
+.settlement-item {
+  padding: 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .seats {
@@ -652,6 +754,12 @@ input {
     font-size: 15px;
   }
 
+  .seat-avatar {
+    width: 30px;
+    height: 30px;
+    font-size: 12px;
+  }
+
   .seat-meta {
     flex-wrap: wrap;
     align-items: flex-start;
@@ -691,6 +799,10 @@ input {
 
   .revealed-grid {
     grid-template-columns: 1fr;
+  }
+
+  .settlement-card {
+    padding: 16px;
   }
 }
 
@@ -856,6 +968,12 @@ input {
   .seat-topline span,
   .seat-meta {
     font-size: 11px;
+  }
+
+  .seat-avatar {
+    width: 26px;
+    height: 26px;
+    font-size: 10px;
   }
 
   .seat-cards {
@@ -1032,5 +1150,17 @@ input {
     min-height: 42px;
     font-size: 12px;
     padding: 8px 6px;
+  }
+
+  .settlement-card {
+    width: min(680px, 100%);
+    max-height: calc(100vh - 22px);
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .settlement-summary,
+  .settlement-item-top span {
+    font-size: 13px;
   }
 }
