@@ -2,6 +2,8 @@ const express = require("express");
 const http = require("http");
 const path = require("path");
 const { Server } = require("socket.io");
+const { createClient } = require("redis");
+const { createAdapter } = require("@socket.io/redis-adapter");
 
 const app = express();
 const server = http.createServer(app);
@@ -12,10 +14,14 @@ const MAX_PLAYERS = 9;
 const STARTING_CHIPS = 2000;
 const SMALL_BLIND = 10;
 const BIG_BLIND = 20;
+const REDIS_URL = process.env.REDIS_URL || "";
 
 app.use(express.static(path.join(__dirname, "public")));
 
 const rooms = {};
+let redisClient = null;
+let redisSubscriber = null;
+let redisEnabled = false;
 
 const SUITS = ["♠", "♥", "♦", "♣"];
 const RANKS = ["2", "3", "4", "5", "6", "7", "8", "9", "10", "J", "Q", "K", "A"];
@@ -35,13 +41,118 @@ const RANK_VALUE = {
   A: 14
 };
 
-function generateRoomId() {
-  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  let id = "";
-  for (let i = 0; i < 6; i++) {
-    id += chars[Math.floor(Math.random() * chars.length)];
+function roomKey(roomId) {
+  return `room:${roomId}`;
+}
+
+function socketRoomKey(socketId) {
+  return `socket-room:${socketId}`;
+}
+
+function getCachedRoomBySocketId(socketId) {
+  return Object.values(rooms).find(room => room.players.some(player => player.id === socketId));
+}
+
+async function initializeRealtimeStore() {
+  if (!REDIS_URL) {
+    console.log("REDIS_URL 未设置，使用进程内存房间存储");
+    return;
   }
-  return rooms[id] ? generateRoomId() : id;
+
+  redisClient = createClient({ url: REDIS_URL });
+  redisSubscriber = redisClient.duplicate();
+
+  redisClient.on("error", error => {
+    console.error("Redis client error:", error);
+  });
+
+  redisSubscriber.on("error", error => {
+    console.error("Redis subscriber error:", error);
+  });
+
+  await redisClient.connect();
+  await redisSubscriber.connect();
+  io.adapter(createAdapter(redisClient, redisSubscriber));
+  redisEnabled = true;
+  console.log("Redis 房间存储和 Socket.IO 跨实例同步已启用");
+}
+
+async function roomExists(roomId) {
+  if (redisEnabled) {
+    return Boolean(await redisClient.exists(roomKey(roomId)));
+  }
+  return Boolean(rooms[roomId]);
+}
+
+async function loadRoom(roomId) {
+  if (!roomId) {
+    return null;
+  }
+
+  if (redisEnabled) {
+    const raw = await redisClient.get(roomKey(roomId));
+    if (!raw) {
+      delete rooms[roomId];
+      return null;
+    }
+    const room = JSON.parse(raw);
+    rooms[roomId] = room;
+    return room;
+  }
+
+  return rooms[roomId] || null;
+}
+
+async function saveRoom(room) {
+  rooms[room.roomId] = room;
+  if (redisEnabled) {
+    await redisClient.set(roomKey(room.roomId), JSON.stringify(room));
+  }
+  return room;
+}
+
+async function deleteRoom(roomId) {
+  delete rooms[roomId];
+  if (redisEnabled) {
+    await redisClient.del(roomKey(roomId));
+  }
+}
+
+async function setSocketRoom(socketId, roomId) {
+  if (redisEnabled) {
+    await redisClient.set(socketRoomKey(socketId), roomId);
+  }
+}
+
+async function clearSocketRoom(socketId) {
+  if (redisEnabled) {
+    await redisClient.del(socketRoomKey(socketId));
+  }
+}
+
+async function getRoomBySocketId(socketId) {
+  if (redisEnabled) {
+    const roomId = await redisClient.get(socketRoomKey(socketId));
+    if (roomId) {
+      return loadRoom(roomId);
+    }
+  }
+
+  return getCachedRoomBySocketId(socketId) || null;
+}
+
+async function generateRoomId() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+  while (true) {
+    let id = "";
+    for (let i = 0; i < 6; i++) {
+      id += chars[Math.floor(Math.random() * chars.length)];
+    }
+    if (!(await roomExists(id))) {
+      return id;
+    }
+  }
 }
 
 function createDeck() {
@@ -84,8 +195,8 @@ function createPlayer(socketId, name) {
   };
 }
 
-function createRoom(hostSocketId, hostName) {
-  const roomId = generateRoomId();
+async function createRoom(hostSocketId, hostName) {
+  const roomId = await generateRoomId();
   const room = {
     roomId,
     hostId: hostSocketId,
@@ -106,12 +217,10 @@ function createRoom(hostSocketId, hostName) {
     showdown: [],
     revealedHands: []
   };
-  rooms[roomId] = room;
-  return room;
-}
 
-function getRoomBySocketId(socketId) {
-  return Object.values(rooms).find(room => room.players.some(player => player.id === socketId));
+  await saveRoom(room);
+  await setSocketRoom(hostSocketId, roomId);
+  return room;
 }
 
 function getPlayer(room, socketId) {
@@ -182,7 +291,6 @@ function stageLabel(stage) {
 function pruneDisconnectedPlayers(room) {
   room.players = room.players.filter(player => player.connected);
   if (!room.players.length) {
-    delete rooms[room.roomId];
     return false;
   }
   if (!room.players.some(player => player.id === room.hostId)) {
@@ -250,19 +358,6 @@ function firstSeatForStage(room) {
     return getNextEligibleIndex(room, bigBlindIndex, { requireChips: false });
   }
   return getNextEligibleIndex(room, room.dealerIndex, { requireChips: false });
-}
-
-function beginBettingRound(room) {
-  room.players.forEach(player => {
-    player.currentBet = 0;
-    if (!player.sittingOut && !player.folded && !player.allIn) {
-      player.actedThisRound = false;
-      player.lastAction = "等待操作";
-    }
-  });
-  room.currentBet = 0;
-  room.minRaise = room.bigBlind;
-  room.currentTurn = firstSeatForStage(room);
 }
 
 function prepareHand(room) {
@@ -701,13 +796,13 @@ function getPlayerView(room, player, index) {
   };
 }
 
-function emitRoomState(roomId) {
-  const room = rooms[roomId];
+async function emitRoomState(roomOrId) {
+  const room = typeof roomOrId === "string" ? await loadRoom(roomOrId) : roomOrId;
   if (!room) {
     return;
   }
 
-  io.to(roomId).emit("roomState", {
+  io.to(room.roomId).emit("roomState", {
     roomId: room.roomId,
     hostId: room.hostId,
     players: room.players.map((player, index) => getPlayerView(room, player, index)),
@@ -735,8 +830,10 @@ function emitRoomState(roomId) {
   });
 }
 
-function removePlayerFromRoom(socketId) {
-  const room = getRoomBySocketId(socketId);
+async function removePlayerFromRoom(socketId) {
+  const room = await getRoomBySocketId(socketId);
+  await clearSocketRoom(socketId);
+
   if (!room) {
     return;
   }
@@ -760,7 +857,7 @@ function removePlayerFromRoom(socketId) {
   }
 
   if (!room.players.length) {
-    delete rooms[room.roomId];
+    await deleteRoom(room.roomId);
     return;
   }
 
@@ -781,208 +878,264 @@ function removePlayerFromRoom(socketId) {
     checkRoundProgress(room);
   }
 
-  emitRoomState(room.roomId);
+  if (!room.players.length) {
+    await deleteRoom(room.roomId);
+    return;
+  }
+
+  await saveRoom(room);
+  await emitRoomState(room);
 }
 
 function normalizeName(name) {
   return (name || "玩家").trim().slice(0, 12) || "玩家";
 }
 
+function emitSocketError(socket, message) {
+  socket.emit("errorMessage", message);
+}
+
+function handleSocketError(socket, error) {
+  console.error("Socket handler error:", error);
+  emitSocketError(socket, "服务器忙，请稍后重试");
+}
+
 io.on("connection", socket => {
   console.log("用户连接:", socket.id);
 
-  socket.on("createRoom", ({ name }) => {
-    const room = createRoom(socket.id, normalizeName(name));
-    socket.join(room.roomId);
-    addLog(room, `${room.players[0].name} 创建了房间 ${room.roomId}`);
-    socket.emit("roomCreated", { roomId: room.roomId });
-    emitRoomState(room.roomId);
-  });
-
-  socket.on("joinRoom", ({ roomId, name }) => {
-    const targetRoomId = (roomId || "").trim().toUpperCase();
-    const room = rooms[targetRoomId];
-
-    if (!room) {
-      socket.emit("errorMessage", "房间不存在");
-      return;
-    }
-    if (room.players.length >= MAX_PLAYERS) {
-      socket.emit("errorMessage", "房间已满");
-      return;
-    }
-    if (room.gameStarted) {
-      socket.emit("errorMessage", "本局进行中，请等待下一局加入");
-      return;
-    }
-    if (room.players.some(player => player.id === socket.id)) {
-      emitRoomState(room.roomId);
-      return;
-    }
-
-    const player = createPlayer(socket.id, normalizeName(name));
-    room.players.push(player);
-    socket.join(room.roomId);
-    addLog(room, `${player.name} 加入了房间`);
-    emitRoomState(room.roomId);
-  });
-
-  socket.on("startGame", () => {
-    const room = getRoomBySocketId(socket.id);
-    if (!room) {
-      return;
-    }
-    if (socket.id !== room.hostId) {
-      socket.emit("errorMessage", "只有房主可以开始");
-      return;
-    }
-    if (room.gameStarted) {
-      socket.emit("errorMessage", "本局已经开始");
-      return;
-    }
-
-    const hasStarted = prepareHand(room);
-    if (hasStarted) {
-      emitRoomState(room.roomId);
-    } else {
-      socket.emit("errorMessage", room.winnerText);
-      emitRoomState(room.roomId);
+  socket.on("createRoom", async ({ name } = {}) => {
+    try {
+      const room = await createRoom(socket.id, normalizeName(name));
+      socket.join(room.roomId);
+      addLog(room, `${room.players[0].name} 创建了房间 ${room.roomId}`);
+      await saveRoom(room);
+      socket.emit("roomCreated", { roomId: room.roomId });
+      await emitRoomState(room);
+    } catch (error) {
+      handleSocketError(socket, error);
     }
   });
 
-  socket.on("restartGame", () => {
-    const room = getRoomBySocketId(socket.id);
-    if (!room) {
-      return;
-    }
-    if (socket.id !== room.hostId) {
-      socket.emit("errorMessage", "只有房主可以开始下一局");
-      return;
-    }
-    if (room.gameStarted) {
-      socket.emit("errorMessage", "请先完成当前对局");
-      return;
-    }
+  socket.on("joinRoom", async ({ roomId, name } = {}) => {
+    try {
+      const targetRoomId = (roomId || "").trim().toUpperCase();
+      const room = await loadRoom(targetRoomId);
 
-    const hasStarted = prepareHand(room);
-    if (hasStarted) {
-      emitRoomState(room.roomId);
-    } else {
-      socket.emit("errorMessage", room.winnerText);
-      emitRoomState(room.roomId);
-    }
-  });
-
-  socket.on("playerAction", ({ action, amount }) => {
-    const room = getRoomBySocketId(socket.id);
-    if (!room || !room.gameStarted) {
-      return;
-    }
-
-    const player = getPlayer(room, socket.id);
-    if (!player) {
-      return;
-    }
-    const currentPlayer = room.players[room.currentTurn];
-    if (!currentPlayer || currentPlayer.id !== socket.id) {
-      socket.emit("errorMessage", "还没轮到你");
-      return;
-    }
-    if (player.folded || player.allIn || player.sittingOut) {
-      socket.emit("errorMessage", "你当前不能操作");
-      return;
-    }
-
-    if (action === "fold") {
-      player.folded = true;
-      player.actedThisRound = true;
-      player.lastAction = "弃牌";
-      addLog(room, `${player.name} 弃牌`);
-    } else if (action === "check") {
-      if (player.currentBet !== room.currentBet) {
-        socket.emit("errorMessage", "当前不能过牌");
+      if (!room) {
+        emitSocketError(socket, "房间不存在");
         return;
       }
-      player.actedThisRound = true;
-      player.lastAction = "过牌";
-      addLog(room, `${player.name} 过牌`);
-    } else if (action === "call") {
-      const need = room.currentBet - player.currentBet;
-      if (need <= 0) {
+      if (room.players.length >= MAX_PLAYERS) {
+        emitSocketError(socket, "房间已满");
+        return;
+      }
+      if (room.gameStarted) {
+        emitSocketError(socket, "本局进行中，请等待下一局加入");
+        return;
+      }
+      if (room.players.some(player => player.id === socket.id)) {
+        socket.join(room.roomId);
+        await setSocketRoom(socket.id, room.roomId);
+        await emitRoomState(room);
+        return;
+      }
+
+      const player = createPlayer(socket.id, normalizeName(name));
+      room.players.push(player);
+      await saveRoom(room);
+      await setSocketRoom(socket.id, room.roomId);
+      socket.join(room.roomId);
+      addLog(room, `${player.name} 加入了房间`);
+      await saveRoom(room);
+      await emitRoomState(room);
+    } catch (error) {
+      handleSocketError(socket, error);
+    }
+  });
+
+  socket.on("startGame", async () => {
+    try {
+      const room = await getRoomBySocketId(socket.id);
+      if (!room) {
+        return;
+      }
+      if (socket.id !== room.hostId) {
+        emitSocketError(socket, "只有房主可以开始");
+        return;
+      }
+      if (room.gameStarted) {
+        emitSocketError(socket, "本局已经开始");
+        return;
+      }
+
+      const hasStarted = prepareHand(room);
+      await saveRoom(room);
+      if (hasStarted) {
+        await emitRoomState(room);
+      } else {
+        emitSocketError(socket, room.winnerText);
+        await emitRoomState(room);
+      }
+    } catch (error) {
+      handleSocketError(socket, error);
+    }
+  });
+
+  socket.on("restartGame", async () => {
+    try {
+      const room = await getRoomBySocketId(socket.id);
+      if (!room) {
+        return;
+      }
+      if (socket.id !== room.hostId) {
+        emitSocketError(socket, "只有房主可以开始下一局");
+        return;
+      }
+      if (room.gameStarted) {
+        emitSocketError(socket, "请先完成当前对局");
+        return;
+      }
+
+      const hasStarted = prepareHand(room);
+      await saveRoom(room);
+      if (hasStarted) {
+        await emitRoomState(room);
+      } else {
+        emitSocketError(socket, room.winnerText);
+        await emitRoomState(room);
+      }
+    } catch (error) {
+      handleSocketError(socket, error);
+    }
+  });
+
+  socket.on("playerAction", async ({ action, amount } = {}) => {
+    try {
+      const room = await getRoomBySocketId(socket.id);
+      if (!room || !room.gameStarted) {
+        return;
+      }
+
+      const player = getPlayer(room, socket.id);
+      if (!player) {
+        return;
+      }
+      const currentPlayer = room.players[room.currentTurn];
+      if (!currentPlayer || currentPlayer.id !== socket.id) {
+        emitSocketError(socket, "还没轮到你");
+        return;
+      }
+      if (player.folded || player.allIn || player.sittingOut) {
+        emitSocketError(socket, "你当前不能操作");
+        return;
+      }
+
+      if (action === "fold") {
+        player.folded = true;
+        player.actedThisRound = true;
+        player.lastAction = "弃牌";
+        addLog(room, `${player.name} 弃牌`);
+      } else if (action === "check") {
+        if (player.currentBet !== room.currentBet) {
+          emitSocketError(socket, "当前不能过牌");
+          return;
+        }
         player.actedThisRound = true;
         player.lastAction = "过牌";
         addLog(room, `${player.name} 过牌`);
-      } else {
-        const paid = collectBet(room, player, need, player.chips === need ? "跟注 all-in" : "跟注");
-        player.actedThisRound = true;
-        addLog(room, `${player.name} ${player.allIn ? "跟注并全下" : `跟注 ${paid}`}`);
-      }
-    } else if (action === "betRaise") {
-      const targetBet = Number(amount);
-      if (!Number.isFinite(targetBet)) {
-        socket.emit("errorMessage", "下注金额无效");
-        return;
-      }
-      if (targetBet <= room.currentBet) {
-        socket.emit("errorMessage", "请输入高于当前下注的总额");
-        return;
-      }
-
-      const minimumTarget = room.currentBet === 0 ? room.bigBlind : room.currentBet + room.minRaise;
-      if (targetBet < minimumTarget) {
-        socket.emit("errorMessage", `最小下注/加注到 ${minimumTarget}`);
-        return;
-      }
-
-      const need = targetBet - player.currentBet;
-      if (need > player.chips) {
-        socket.emit("errorMessage", "筹码不足，请改用全下");
-        return;
-      }
-
-      const previousBet = room.currentBet;
-      collectBet(room, player, need, previousBet === 0 ? "下注" : "加注");
-      room.currentBet = player.currentBet;
-      room.minRaise = room.currentBet - previousBet;
-      resetRoundActions(room);
-      player.actedThisRound = true;
-      addLog(room, `${player.name} ${previousBet === 0 ? `下注到 ${targetBet}` : `加注到 ${targetBet}`}`);
-    } else if (action === "allIn") {
-      if (player.chips <= 0) {
-        socket.emit("errorMessage", "没有可全下的筹码");
-        return;
-      }
-
-      const previousBet = room.currentBet;
-      const totalTarget = player.currentBet + player.chips;
-      const raiseSize = totalTarget - previousBet;
-      collectBet(room, player, player.chips, "全下");
-
-      if (player.currentBet > previousBet) {
-        room.currentBet = player.currentBet;
-        if (raiseSize >= room.minRaise) {
-          room.minRaise = raiseSize;
-          resetRoundActions(room);
+      } else if (action === "call") {
+        const need = room.currentBet - player.currentBet;
+        if (need <= 0) {
+          player.actedThisRound = true;
+          player.lastAction = "过牌";
+          addLog(room, `${player.name} 过牌`);
+        } else {
+          const paid = collectBet(room, player, need, player.chips === need ? "跟注 all-in" : "跟注");
+          player.actedThisRound = true;
+          addLog(room, `${player.name} ${player.allIn ? "跟注并全下" : `跟注 ${paid}`}`);
         }
+      } else if (action === "betRaise") {
+        const targetBet = Number(amount);
+        if (!Number.isFinite(targetBet)) {
+          emitSocketError(socket, "下注金额无效");
+          return;
+        }
+        if (targetBet <= room.currentBet) {
+          emitSocketError(socket, "请输入高于当前下注的总额");
+          return;
+        }
+
+        const minimumTarget = room.currentBet === 0 ? room.bigBlind : room.currentBet + room.minRaise;
+        if (targetBet < minimumTarget) {
+          emitSocketError(socket, `最小下注/加注到 ${minimumTarget}`);
+          return;
+        }
+
+        const need = targetBet - player.currentBet;
+        if (need > player.chips) {
+          emitSocketError(socket, "筹码不足，请改用全下");
+          return;
+        }
+
+        const previousBet = room.currentBet;
+        collectBet(room, player, need, previousBet === 0 ? "下注" : "加注");
+        room.currentBet = player.currentBet;
+        room.minRaise = room.currentBet - previousBet;
+        resetRoundActions(room);
+        player.actedThisRound = true;
+        addLog(room, `${player.name} ${previousBet === 0 ? `下注到 ${targetBet}` : `加注到 ${targetBet}`}`);
+      } else if (action === "allIn") {
+        if (player.chips <= 0) {
+          emitSocketError(socket, "没有可全下的筹码");
+          return;
+        }
+
+        const previousBet = room.currentBet;
+        const totalTarget = player.currentBet + player.chips;
+        const raiseSize = totalTarget - previousBet;
+        collectBet(room, player, player.chips, "全下");
+
+        if (player.currentBet > previousBet) {
+          room.currentBet = player.currentBet;
+          if (raiseSize >= room.minRaise) {
+            room.minRaise = raiseSize;
+            resetRoundActions(room);
+          }
+        }
+
+        player.actedThisRound = true;
+        addLog(room, `${player.name} 全下到 ${player.currentBet}`);
+      } else {
+        emitSocketError(socket, "未知操作");
+        return;
       }
 
-      player.actedThisRound = true;
-      addLog(room, `${player.name} 全下到 ${player.currentBet}`);
-    } else {
-      socket.emit("errorMessage", "未知操作");
-      return;
+      checkRoundProgress(room);
+      await saveRoom(room);
+      await emitRoomState(room);
+    } catch (error) {
+      handleSocketError(socket, error);
     }
-
-    checkRoundProgress(room);
-    emitRoomState(room.roomId);
   });
 
-  socket.on("disconnect", () => {
+  socket.on("disconnect", async () => {
     console.log("用户断开:", socket.id);
-    removePlayerFromRoom(socket.id);
+    try {
+      await removePlayerFromRoom(socket.id);
+    } catch (error) {
+      console.error("Disconnect handler error:", error);
+    }
   });
 });
 
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+async function bootstrap() {
+  await initializeRealtimeStore();
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+bootstrap().catch(error => {
+  console.error("Server bootstrap failed:", error);
+  process.exit(1);
 });
