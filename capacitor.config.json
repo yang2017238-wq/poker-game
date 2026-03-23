@@ -3,6 +3,8 @@
   "appName": "德州牌桌",
   "webDir": "public",
   "server": {
-    "androidScheme": "https"
+    "url": "https://poker-game-3tpk.onrender.com",
+    "androidScheme": "https",
+    "cleartext": false
   }
 }
