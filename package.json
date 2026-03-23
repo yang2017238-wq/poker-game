@@ -9,6 +9,9 @@
     "android:open": "npx cap open android"
   },
   "dependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
     "express": "^5.2.1",
     "socket.io": "^4.8.3",
     "ws": "^8.18.0"
