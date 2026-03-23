@@ -6,11 +6,7 @@ const createRoomBtn = document.getElementById("createRoomBtn");
 const joinRoomBtn = document.getElementById("joinRoomBtn");
 const copyLinkBtn = document.getElementById("copyLinkBtn");
 const startGameBtn = document.getElementById("startGameBtn");
-const foldBtn = document.getElementById("foldBtn");
-const checkBtn = document.getElementById("checkBtn");
-const callBtn = document.getElementById("callBtn");
-const raiseBtn = document.getElementById("raiseBtn");
-const allInBtn = document.getElementById("allInBtn");
+const backToLobbyBtn = document.getElementById("backToLobbyBtn");
 const betAmountInput = document.getElementById("betAmountInput");
 const dockFoldBtn = document.getElementById("dockFoldBtn");
 const dockCheckBtn = document.getElementById("dockCheckBtn");
@@ -18,7 +14,8 @@ const dockCallBtn = document.getElementById("dockCallBtn");
 const dockRaiseBtn = document.getElementById("dockRaiseBtn");
 const dockAllInBtn = document.getElementById("dockAllInBtn");
 const appShellEl = document.getElementById("appShell");
-const roomPanelToggleBtn = document.getElementById("roomPanelToggleBtn");
+const lobbyScreenEl = document.getElementById("lobbyScreen");
+const tableScreenEl = document.getElementById("tableScreen");
 
 const roomCodeEl = document.getElementById("roomCode");
 const stageTextEl = document.getElementById("stageText");
@@ -49,6 +46,7 @@ const settlementTitleEl = document.getElementById("settlementTitle");
 const settlementSummaryEl = document.getElementById("settlementSummary");
 const settlementListEl = document.getElementById("settlementList");
 const closeSettlementBtn = document.getElementById("closeSettlementBtn");
+const rotateOverlayEl = document.getElementById("rotateOverlay");
 
 let currentRoomState = null;
 let myPrivateHand = [];
@@ -56,23 +54,22 @@ let turnFlashTimer = null;
 let lastTurnPlayerId = null;
 let lastSettlementKey = "";
 
-function isCompactLandscape() {
-  return window.matchMedia("(max-width: 1100px) and (orientation: landscape)").matches ||
-    window.matchMedia("(max-height: 560px) and (orientation: landscape)").matches;
+const foldBtn = dockFoldBtn;
+const checkBtn = dockCheckBtn;
+const callBtn = dockCallBtn;
+const raiseBtn = dockRaiseBtn;
+const allInBtn = dockAllInBtn;
+
+function isLandscapeTable() {
+  return window.matchMedia("(orientation: landscape)").matches;
 }
 
-function syncResponsivePanels() {
+function syncScreens() {
   const joined = Boolean(currentRoomState?.roomId);
   appShellEl.classList.toggle("joined-room", joined);
-  appShellEl.classList.toggle("compact-landscape", isCompactLandscape());
-
-  if (!isCompactLandscape()) {
-    appShellEl.classList.remove("show-room-panel");
-  }
-
-  roomPanelToggleBtn.textContent = appShellEl.classList.contains("show-room-panel")
-    ? "收起"
-    : joined ? "房间" : "加入";
+  lobbyScreenEl.classList.toggle("active", !joined);
+  tableScreenEl.classList.toggle("active", joined);
+  rotateOverlayEl.classList.toggle("visible", joined && !isLandscapeTable());
 }
 
 function getSavedName() {
@@ -183,6 +180,9 @@ function renderMyHand() {
 }
 
 function renderLogs() {
+  if (!logListEl) {
+    return;
+  }
   const logs = currentRoomState?.actionLog || [];
   if (!logs.length) {
     logListEl.innerHTML = `<div class="empty-state">这里会显示行动日志</div>`;
@@ -330,8 +330,12 @@ function updateHeaderInfo() {
   stageTextEl.textContent = currentRoomState?.stageLabel || "等待开局";
   potTextEl.textContent = currentRoomState?.pot ?? 0;
   tablePotEl.textContent = currentRoomState?.pot ?? 0;
-  blindsTextEl.textContent = currentRoomState ? `盲注 ${currentRoomState.blinds.small} / ${currentRoomState.blinds.big}` : "盲注 10 / 20";
-  handTextEl.textContent = `第 ${currentRoomState?.handNumber || 0} 局`;
+  if (blindsTextEl) {
+    blindsTextEl.textContent = currentRoomState ? `盲注 ${currentRoomState.blinds.small} / ${currentRoomState.blinds.big}` : "盲注 10 / 20";
+  }
+  if (handTextEl) {
+    handTextEl.textContent = `第 ${currentRoomState?.handNumber || 0} 局`;
+  }
   hudRoomCodeEl.textContent = currentRoomState?.roomId || "未加入";
   hudStageTextEl.textContent = currentRoomState?.stageLabel || "等待开局";
   hudBlindsTextEl.textContent = currentRoomState ? `${currentRoomState.blinds.small} / ${currentRoomState.blinds.big}` : "10 / 20";
@@ -351,18 +355,15 @@ function updateActionPanel() {
   if (!me || !currentRoomState) {
     actionSummaryEl.textContent = "等待加入房间。";
     turnHintEl.textContent = "等待加入房间";
-    [foldBtn, checkBtn, callBtn, raiseBtn, allInBtn, dockFoldBtn, dockCheckBtn, dockCallBtn, dockRaiseBtn, dockAllInBtn, startGameBtn].forEach(button => {
+    [foldBtn, checkBtn, callBtn, raiseBtn, allInBtn, startGameBtn].forEach(button => {
       button.disabled = true;
     });
     dockStageEl.textContent = "等待开局";
     dockCallEl.textContent = "跟注 0";
     dockRaiseEl.textContent = "下注到 20";
     callBtn.textContent = "跟注";
-    dockCallBtn.textContent = "跟注";
     raiseBtn.textContent = "下注 / 加注";
-    dockRaiseBtn.textContent = "下注 / 加注";
     checkBtn.textContent = "过牌";
-    dockCheckBtn.textContent = "过牌";
     betAmountInput.disabled = true;
     updateTurnBanner(null, false);
     return;
@@ -388,11 +389,8 @@ function updateActionPanel() {
   dockCallEl.textContent = callLabel;
   dockRaiseEl.textContent = raiseLabel;
   callBtn.textContent = callLabel;
-  dockCallBtn.textContent = callLabel;
   raiseBtn.textContent = raiseLabel;
-  dockRaiseBtn.textContent = raiseLabel;
   checkBtn.textContent = toCall > 0 ? "不能过牌" : "过牌";
-  dockCheckBtn.textContent = toCall > 0 ? "不能过牌" : "过牌";
 
   betAmountInput.min = String(minTarget);
   if (Number(betAmountInput.value) < minTarget) {
@@ -406,17 +404,12 @@ function updateActionPanel() {
   callBtn.disabled = disableAction || toCall <= 0;
   raiseBtn.disabled = disableAction || me.chips + me.currentBet <= currentRoomState.currentBet;
   allInBtn.disabled = disableAction || me.chips <= 0;
-  dockFoldBtn.disabled = foldBtn.disabled;
-  dockCheckBtn.disabled = checkBtn.disabled;
-  dockCallBtn.disabled = callBtn.disabled;
-  dockRaiseBtn.disabled = raiseBtn.disabled;
-  dockAllInBtn.disabled = allInBtn.disabled;
 
   updateTurnBanner(me, myTurn);
 }
 
 function renderRoom() {
-  syncResponsivePanels();
+  syncScreens();
   updateHeaderInfo();
   renderCommunityCards();
   renderPlayers();
@@ -481,11 +474,6 @@ checkBtn.onclick = () => sendAction("check");
 callBtn.onclick = () => sendAction("call");
 raiseBtn.onclick = () => sendAction("betRaise", Number(betAmountInput.value));
 allInBtn.onclick = () => sendAction("allIn");
-dockFoldBtn.onclick = () => sendAction("fold");
-dockCheckBtn.onclick = () => sendAction("check");
-dockCallBtn.onclick = () => sendAction("call");
-dockRaiseBtn.onclick = () => sendAction("betRaise", Number(betAmountInput.value));
-dockAllInBtn.onclick = () => sendAction("allIn");
 
 socket.on("roomCreated", ({ roomId }) => {
   roomIdInput.value = roomId;
@@ -510,12 +498,8 @@ closeSettlementBtn.onclick = () => {
   hideSettlementModal();
 };
 
-roomPanelToggleBtn.onclick = () => {
-  if (!isCompactLandscape()) {
-    return;
-  }
-  appShellEl.classList.toggle("show-room-panel");
-  syncResponsivePanels();
+backToLobbyBtn.onclick = () => {
+  window.location.href = "/";
 };
 
 settlementModalEl.onclick = event => {
@@ -535,7 +519,7 @@ function bootstrapFromUrl() {
 }
 
 window.addEventListener("resize", () => {
-  syncResponsivePanels();
+  syncScreens();
 });
 
 bootstrapFromUrl();
