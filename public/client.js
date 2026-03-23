@@ -17,6 +17,8 @@ const dockCheckBtn = document.getElementById("dockCheckBtn");
 const dockCallBtn = document.getElementById("dockCallBtn");
 const dockRaiseBtn = document.getElementById("dockRaiseBtn");
 const dockAllInBtn = document.getElementById("dockAllInBtn");
+const appShellEl = document.getElementById("appShell");
+const roomPanelToggleBtn = document.getElementById("roomPanelToggleBtn");
 
 const roomCodeEl = document.getElementById("roomCode");
 const stageTextEl = document.getElementById("stageText");
@@ -53,6 +55,25 @@ let myPrivateHand = [];
 let turnFlashTimer = null;
 let lastTurnPlayerId = null;
 let lastSettlementKey = "";
+
+function isCompactLandscape() {
+  return window.matchMedia("(max-width: 1100px) and (orientation: landscape)").matches ||
+    window.matchMedia("(max-height: 560px) and (orientation: landscape)").matches;
+}
+
+function syncResponsivePanels() {
+  const joined = Boolean(currentRoomState?.roomId);
+  appShellEl.classList.toggle("joined-room", joined);
+  appShellEl.classList.toggle("compact-landscape", isCompactLandscape());
+
+  if (!isCompactLandscape()) {
+    appShellEl.classList.remove("show-room-panel");
+  }
+
+  roomPanelToggleBtn.textContent = appShellEl.classList.contains("show-room-panel")
+    ? "收起"
+    : joined ? "房间" : "加入";
+}
 
 function getSavedName() {
   return window.localStorage.getItem("poker-player-name") || "";
@@ -395,6 +416,7 @@ function updateActionPanel() {
 }
 
 function renderRoom() {
+  syncResponsivePanels();
   updateHeaderInfo();
   renderCommunityCards();
   renderPlayers();
@@ -488,6 +510,14 @@ closeSettlementBtn.onclick = () => {
   hideSettlementModal();
 };
 
+roomPanelToggleBtn.onclick = () => {
+  if (!isCompactLandscape()) {
+    return;
+  }
+  appShellEl.classList.toggle("show-room-panel");
+  syncResponsivePanels();
+};
+
 settlementModalEl.onclick = event => {
   if (event.target === settlementModalEl) {
     hideSettlementModal();
@@ -503,5 +533,9 @@ function bootstrapFromUrl() {
   }
   renderRoom();
 }
+
+window.addEventListener("resize", () => {
+  syncResponsivePanels();
+});
 
 bootstrapFromUrl();

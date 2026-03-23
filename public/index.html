@@ -7,10 +7,10 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <title>公网德州扑克牌桌</title>
-  <link rel="stylesheet" href="style.css?v=20260323-2" />
+  <link rel="stylesheet" href="style.css?v=20260323-3" />
 </head>
 <body>
-  <div class="app-shell">
+  <div id="appShell" class="app-shell">
     <header class="hero">
       <div>
         <p class="eyebrow">Public Texas Hold'em Table</p>
@@ -63,6 +63,9 @@
         </div>
 
         <div class="table-stage">
+          <div class="table-tools">
+            <button id="roomPanelToggleBtn" class="tool-btn" type="button">加入</button>
+          </div>
           <div class="poker-table">
             <div class="table-hud">
               <div class="hud-chip"><span>房间</span><strong id="hudRoomCode">未加入</strong></div>
@@ -166,6 +169,6 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js?v=20260323-2"></script>
+  <script src="client.js?v=20260323-3"></script>
 </body>
 </html>
