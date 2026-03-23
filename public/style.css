@@ -372,6 +372,12 @@ input {
   gap: 18px;
 }
 
+.room-panel,
+.action-panel,
+.log-panel {
+  min-width: 0;
+}
+
 .field-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -657,5 +663,251 @@ input {
 
   .log-list {
     max-height: 220px;
+  }
+}
+
+@media (max-width: 950px) and (orientation: landscape) {
+  body {
+    overflow: hidden;
+  }
+
+  .app-shell {
+    width: calc(100vw - 16px);
+    height: 100vh;
+    padding: 8px 0 10px;
+  }
+
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr);
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .eyebrow,
+  .hero-copy {
+    display: none;
+  }
+
+  .hero h1 {
+    font-size: 24px;
+    line-height: 1.05;
+  }
+
+  .hero-status {
+    min-width: 0;
+    grid-template-columns: repeat(3, minmax(88px, 1fr));
+  }
+
+  .status-card {
+    padding: 10px 12px;
+  }
+
+  .status-label {
+    margin-bottom: 4px;
+    font-size: 11px;
+  }
+
+  .layout {
+    grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.95fr);
+    gap: 10px;
+    min-height: calc(100vh - 86px);
+  }
+
+  .table-panel {
+    gap: 10px;
+    min-height: 0;
+  }
+
+  .table-head {
+    display: none;
+  }
+
+  .poker-table {
+    min-height: 0;
+    height: calc(100vh - 178px);
+    padding: 12px;
+    border-width: 5px;
+    border-radius: 28px;
+  }
+
+  .poker-table::before {
+    inset: 14px;
+  }
+
+  .table-center {
+    width: min(340px, 60%);
+    gap: 10px;
+  }
+
+  .community-row {
+    min-height: 72px;
+    gap: 8px;
+  }
+
+  .pot-pill,
+  .winner-banner {
+    padding: 8px 12px;
+    min-height: 0;
+  }
+
+  .seats {
+    min-height: 100%;
+    height: 100%;
+  }
+
+  .seat {
+    width: 138px;
+    padding: 10px;
+    border-radius: 16px;
+  }
+
+  .seat-topline strong {
+    font-size: 13px;
+  }
+
+  .seat-topline span,
+  .seat-meta {
+    font-size: 11px;
+  }
+
+  .seat-cards {
+    margin: 8px 0;
+    gap: 4px;
+  }
+
+  .badge {
+    font-size: 10px;
+    padding: 2px 7px;
+  }
+
+  .seat-pos-0 {
+    top: 8px;
+  }
+
+  .seat-pos-1,
+  .seat-pos-7 {
+    top: 48px;
+  }
+
+  .seat-pos-2,
+  .seat-pos-6 {
+    top: 180px;
+  }
+
+  .seat-pos-3,
+  .seat-pos-5 {
+    bottom: 76px;
+  }
+
+  .seat-pos-4 {
+    bottom: 8px;
+  }
+
+  .my-hand-panel {
+    padding: 10px 12px;
+  }
+
+  .my-hand-header h3 {
+    font-size: 16px;
+  }
+
+  .hand-row {
+    min-height: 0;
+    gap: 8px;
+  }
+
+  .poker-card {
+    width: 42px;
+    height: 60px;
+    font-size: 15px;
+  }
+
+  .mini-card {
+    width: 24px;
+    height: 33px;
+    font-size: 11px;
+    border-radius: 8px;
+  }
+
+  .sidebar {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: 10px;
+    min-height: 0;
+  }
+
+  .log-panel {
+    display: none;
+  }
+
+  .panel {
+    padding: 12px;
+    border-radius: 18px;
+  }
+
+  .panel h2 {
+    font-size: 18px;
+  }
+
+  .section-kicker {
+    margin-bottom: 4px;
+    font-size: 10px;
+  }
+
+  .field-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .field {
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+
+  .field span {
+    font-size: 11px;
+  }
+
+  .field input {
+    padding: 9px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+  }
+
+  .button-row {
+    gap: 8px;
+  }
+
+  .btn {
+    min-height: 40px;
+    padding: 9px 10px;
+    border-radius: 12px;
+    font-size: 13px;
+  }
+
+  .share-link,
+  .summary-box {
+    padding: 9px 10px;
+    font-size: 12px;
+    border-radius: 12px;
+  }
+
+  .action-panel {
+    display: grid;
+    grid-template-rows: auto auto auto 1fr;
+    min-height: 0;
+  }
+
+  .action-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .action-grid .btn:last-child {
+    grid-column: span 2;
   }
 }
