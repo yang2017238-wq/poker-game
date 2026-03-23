@@ -945,44 +945,29 @@ input {
     padding: 8px 0 10px;
   }
 
-  .hero {
-    display: grid;
-    grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.9fr);
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 10px;
-  }
-
+  .table-hero,
   .eyebrow,
   .hero-copy {
     display: none;
   }
 
-  .hero h1 {
-    font-size: 24px;
-    line-height: 1.05;
-  }
-
-  .hero-status {
-    min-width: 0;
-    grid-template-columns: repeat(3, minmax(88px, 1fr));
-  }
-
-  .status-card {
-    padding: 10px 12px;
-  }
-
-  .status-label {
-    margin-bottom: 4px;
-    font-size: 11px;
+  .turn-banner {
+    position: fixed;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    margin: 0;
+    padding: 7px 12px;
+    font-size: 12px;
+    z-index: 40;
   }
 
   .layout {
-    min-height: calc(100vh - 106px);
+    min-height: 100vh;
   }
 
   .table-panel {
-    gap: 10px;
+    gap: 6px;
     min-height: 0;
   }
 
@@ -996,57 +981,72 @@ input {
 
   .table-tools {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 8px;
+    right: 8px;
     z-index: 8;
     display: flex;
-    gap: 8px;
+    gap: 6px;
   }
 
   .poker-table {
     min-height: 0;
-    height: calc(100vh - 224px);
-    padding: 12px;
+    height: calc(100vh - 118px);
+    padding: 8px;
     border-width: 5px;
     border-radius: 28px;
   }
 
   .poker-table::before {
-    inset: 14px;
+    inset: 10px;
   }
 
   .table-center {
-    width: min(340px, 60%);
-    gap: 10px;
+    width: min(260px, 46%);
+    gap: 6px;
   }
 
   .table-hud {
-    top: 10px;
-    left: 10px;
-    right: 84px;
-    gap: 8px;
+    top: 8px;
+    left: 8px;
+    right: 146px;
+    gap: 6px;
   }
 
   .hud-chip {
-    min-width: 88px;
-    padding: 7px 9px;
-    border-radius: 12px;
+    min-width: 72px;
+    padding: 5px 7px;
+    border-radius: 10px;
   }
 
   .hud-chip span {
-    font-size: 10px;
-    margin-bottom: 2px;
+    font-size: 9px;
+    margin-bottom: 1px;
+  }
+
+  .hud-chip strong {
+    font-size: 12px;
+  }
+
+  .table-hud .hud-chip:nth-child(3),
+  .table-hud .hud-chip:nth-child(4) {
+    display: none;
+  }
+
+  .tool-btn {
+    padding: 6px 10px;
+    font-size: 12px;
   }
 
   .community-row {
-    min-height: 72px;
-    gap: 8px;
+    min-height: 56px;
+    gap: 6px;
   }
 
   .pot-pill,
   .winner-banner {
-    padding: 8px 12px;
+    padding: 6px 10px;
     min-height: 0;
+    font-size: 12px;
   }
 
   .seats {
@@ -1055,34 +1055,39 @@ input {
   }
 
   .seat {
-    width: 138px;
-    padding: 10px;
-    border-radius: 16px;
+    width: 112px;
+    padding: 8px;
+    border-radius: 14px;
   }
 
   .seat-topline strong {
-    font-size: 13px;
+    font-size: 11px;
   }
 
   .seat-topline span,
   .seat-meta {
-    font-size: 11px;
+    font-size: 10px;
   }
 
   .seat-avatar {
-    width: 26px;
-    height: 26px;
-    font-size: 10px;
+    width: 22px;
+    height: 22px;
+    font-size: 9px;
+  }
+
+  .seat-stack,
+  .seat-meta {
+    display: none;
   }
 
   .seat-cards {
-    margin: 8px 0;
-    gap: 4px;
+    margin: 6px 0 0;
+    gap: 3px;
   }
 
   .badge {
-    font-size: 10px;
-    padding: 2px 7px;
+    font-size: 9px;
+    padding: 1px 5px;
   }
 
   .seat-pos-0 {
@@ -1109,29 +1114,31 @@ input {
   }
 
   .my-hand-panel {
-    padding: 10px 12px;
+    padding: 6px 8px;
+    min-height: 52px;
   }
 
-  .my-hand-header h3 {
-    font-size: 16px;
+  .my-hand-header {
+    display: none;
   }
 
   .hand-row {
     min-height: 0;
-    gap: 8px;
+    gap: 6px;
+    justify-content: center;
   }
 
   .poker-card {
-    width: 42px;
-    height: 60px;
-    font-size: 15px;
+    width: 34px;
+    height: 48px;
+    font-size: 13px;
   }
 
   .mini-card {
-    width: 24px;
-    height: 33px;
-    font-size: 11px;
-    border-radius: 8px;
+    width: 20px;
+    height: 28px;
+    font-size: 10px;
+    border-radius: 6px;
   }
 
   .sidebar {
@@ -1213,16 +1220,6 @@ input {
     display: none;
   }
 
-  .action-grid {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
-  }
-
-  .action-grid .btn:last-child {
-    grid-column: span 2;
-  }
-
   .mobile-action-dock {
     position: fixed;
     left: 8px;
@@ -1230,30 +1227,51 @@ input {
     bottom: 8px;
     z-index: 35;
     display: grid;
-    gap: 8px;
-    padding: 10px;
-    border-radius: 18px;
+    grid-template-columns: 100px 1fr;
+    gap: 6px;
+    align-items: center;
+    padding: 6px 8px;
+    border-radius: 14px;
     background: rgba(8, 18, 24, 0.92);
     border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow: var(--shadow);
     backdrop-filter: blur(10px);
   }
 
-  .dock-top {
-    justify-content: flex-start;
-    flex-wrap: wrap;
+  .dock-top,
+  .dock-summary {
+    display: none;
   }
 
   .dock-actions {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 8px;
+    gap: 6px;
   }
 
   .dock-actions .btn {
-    min-height: 42px;
+    min-height: 34px;
+    font-size: 10px;
+    padding: 6px 4px;
+  }
+
+  .dock-betbar {
+    width: 100%;
+  }
+
+  .dock-betfield {
+    width: 100%;
+  }
+
+  .dock-betfield span {
+    display: none;
+  }
+
+  .dock-betfield input {
+    max-width: 100px;
+    min-height: 34px;
+    padding: 6px 8px;
     font-size: 12px;
-    padding: 8px 6px;
   }
 
   .app-shell.joined-room .room-panel {
