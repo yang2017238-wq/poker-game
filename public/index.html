@@ -31,6 +31,8 @@
       </div>
     </header>
 
+    <div id="turnBanner" class="turn-banner"></div>
+
     <main class="layout">
       <section class="table-panel">
         <div class="table-head">
@@ -60,6 +62,17 @@
           </div>
           <div id="myHand" class="cards-row hand-row"></div>
         </div>
+
+        <section class="panel reveal-panel">
+          <div class="reveal-head">
+            <div>
+              <p class="section-kicker">摊牌结果</p>
+              <h2>本局底牌公开</h2>
+            </div>
+            <span id="revealHint">牌局结束后显示</span>
+          </div>
+          <div id="revealedHands" class="revealed-grid"></div>
+        </section>
       </section>
 
       <aside class="sidebar">
@@ -111,6 +124,21 @@
         </section>
       </aside>
     </main>
+
+    <div class="mobile-action-dock">
+      <div class="dock-top">
+        <div id="dockStage" class="dock-chip">等待开局</div>
+        <div id="dockCall" class="dock-chip">跟注 0</div>
+        <div id="dockRaise" class="dock-chip">最小加注到 20</div>
+      </div>
+      <div class="dock-actions">
+        <button id="dockFoldBtn" class="btn btn-danger">弃牌</button>
+        <button id="dockCheckBtn" class="btn btn-secondary">过牌</button>
+        <button id="dockCallBtn" class="btn btn-secondary">跟注</button>
+        <button id="dockRaiseBtn" class="btn btn-primary">下注 / 加注</button>
+        <button id="dockAllInBtn" class="btn btn-warning">全下</button>
+      </div>
+    </div>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>

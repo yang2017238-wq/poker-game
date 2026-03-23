@@ -103,7 +103,8 @@ function createRoom(hostSocketId, hostName) {
     smallBlind: SMALL_BLIND,
     bigBlind: BIG_BLIND,
     handNumber: 0,
-    showdown: []
+    showdown: [],
+    revealedHands: []
   };
   rooms[roomId] = room;
   return room;
@@ -288,6 +289,7 @@ function prepareHand(room) {
   room.gameStarted = true;
   room.winnerText = "";
   room.showdown = [];
+  room.revealedHands = [];
 
   room.players.forEach(resetPlayerForNewHand);
   dealHoleCards(room);
@@ -376,6 +378,14 @@ function checkRoundProgress(room) {
         handName: "未摊牌"
       }
     ];
+    room.revealedHands = room.players
+      .filter(player => player.hand.length)
+      .map(player => ({
+        playerId: player.id,
+        name: player.name,
+        cards: player.hand.map(card => card.label),
+        handName: player.id === winner.id ? "未摊牌获胜" : player.folded ? "已弃牌" : "未亮牌"
+      }));
     pruneDisconnectedPlayers(room);
     return;
   }
@@ -621,6 +631,17 @@ function settleShowdown(room) {
     name: item.player.name,
     handName: item.result.name
   }));
+  room.revealedHands = room.players
+    .filter(player => player.hand.length)
+    .map(player => {
+      const contender = contenders.find(item => item.player.id === player.id);
+      return {
+        playerId: player.id,
+        name: player.name,
+        cards: player.hand.map(card => card.label),
+        handName: contender ? contender.result.name : player.folded ? "已弃牌" : "未参与摊牌"
+      };
+    });
 
   for (const contender of contenders) {
     contender.player.lastAction = contender.result.name;
@@ -701,6 +722,7 @@ function emitRoomState(roomId) {
     winnerText: room.winnerText,
     actionLog: room.actionLog.slice(-12),
     showdown: room.showdown,
+    revealedHands: room.revealedHands,
     blinds: {
       small: room.smallBlind,
       big: room.bigBlind
