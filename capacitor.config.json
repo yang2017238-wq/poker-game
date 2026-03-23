@@ -1,0 +1,8 @@
+{
+  "appId": "com.pokertable.online",
+  "appName": "德州牌桌",
+  "webDir": "public",
+  "server": {
+    "androidScheme": "https"
+  }
+}

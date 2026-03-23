@@ -4,7 +4,9 @@
   "description": "Multiplayer Texas Hold'em poker game",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "android:sync": "npx cap sync android",
+    "android:open": "npx cap open android"
   },
   "dependencies": {
     "express": "^5.2.1",

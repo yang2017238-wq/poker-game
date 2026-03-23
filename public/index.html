@@ -4,10 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#0f5b45" />
+  <meta name="application-name" content="德州牌桌" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="德州牌桌" />
   <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml" />
+  <link rel="apple-touch-icon" href="/icons/app-icon.svg" />
   <title>公网德州扑克牌桌</title>
-  <link rel="stylesheet" href="style.css?v=20260323-5" />
+  <link rel="stylesheet" href="style.css?v=20260323-6" />
 </head>
 <body>
   <div id="appShell" class="app-shell">
@@ -36,6 +42,10 @@
             <button id="createRoomBtn" class="btn btn-primary">创建房间</button>
             <button id="joinRoomBtn" class="btn btn-secondary">加入房间</button>
           </div>
+          <div class="button-row">
+            <button id="installAppBtn" class="btn btn-ghost">安装应用</button>
+          </div>
+          <p id="installHint" class="share-link">安卓可直接安装到桌面，iPhone 可用“添加到主屏幕”。</p>
           <p id="shareLink" class="share-link">创建房间后，这里会显示邀请链接</p>
         </div>
       </div>
@@ -156,6 +166,6 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js?v=20260323-5"></script>
+  <script src="client.js?v=20260323-6"></script>
 </body>
 </html>

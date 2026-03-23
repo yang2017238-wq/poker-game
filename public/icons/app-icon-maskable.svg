@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="felt" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#146b52"/>
+      <stop offset="100%" stop-color="#081218"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="#081218"/>
+  <circle cx="256" cy="256" r="210" fill="url(#felt)"/>
+  <circle cx="256" cy="256" r="180" fill="none" stroke="#8a5723" stroke-width="18"/>
+  <rect x="152" y="144" width="96" height="136" rx="16" fill="#fffefb" transform="rotate(-10 200 212)"/>
+  <rect x="264" y="164" width="96" height="136" rx="16" fill="#fffefb" transform="rotate(12 312 232)"/>
+  <text x="198" y="226" font-size="56" font-family="Georgia, serif" fill="#b03030" text-anchor="middle">A</text>
+  <text x="310" y="246" font-size="56" font-family="Georgia, serif" fill="#171717" text-anchor="middle">K</text>
+  <text x="256" y="338" font-size="40" font-family="Trebuchet MS, sans-serif" fill="#f8f4e7" text-anchor="middle">POKER</text>
+  <text x="256" y="378" font-size="24" font-family="Trebuchet MS, sans-serif" fill="#e3b956" text-anchor="middle">TABLE</text>
+</svg>

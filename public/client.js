@@ -4,6 +4,8 @@ const playerNameInput = document.getElementById("playerName");
 const roomIdInput = document.getElementById("roomIdInput");
 const createRoomBtn = document.getElementById("createRoomBtn");
 const joinRoomBtn = document.getElementById("joinRoomBtn");
+const installAppBtn = document.getElementById("installAppBtn");
+const installHintEl = document.getElementById("installHint");
 const copyLinkBtn = document.getElementById("copyLinkBtn");
 const startGameBtn = document.getElementById("startGameBtn");
 const backToLobbyBtn = document.getElementById("backToLobbyBtn");
@@ -53,6 +55,7 @@ let myPrivateHand = [];
 let turnFlashTimer = null;
 let lastTurnPlayerId = null;
 let lastSettlementKey = "";
+let deferredInstallPrompt = null;
 
 const foldBtn = dockFoldBtn;
 const checkBtn = dockCheckBtn;
@@ -70,6 +73,33 @@ function syncScreens() {
   lobbyScreenEl.classList.toggle("active", !joined);
   tableScreenEl.classList.toggle("active", joined);
   rotateOverlayEl.classList.toggle("visible", joined && !isLandscapeTable());
+}
+
+function updateInstallUi() {
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  if (isStandalone) {
+    installAppBtn.disabled = true;
+    installAppBtn.textContent = "已安装";
+    installHintEl.textContent = "你正在以应用模式打开牌桌。";
+    return;
+  }
+
+  installAppBtn.disabled = false;
+  installAppBtn.textContent = deferredInstallPrompt ? "安装应用" : "安装指引";
+  installHintEl.textContent = deferredInstallPrompt
+    ? "点击安装应用，可像软件一样从桌面启动。"
+    : "安卓浏览器可直接安装；iPhone 请点 Safari 的“分享”再选“添加到主屏幕”。";
+}
+
+async function registerServiceWorker() {
+  if (!("serviceWorker" in navigator)) {
+    return;
+  }
+  try {
+    await navigator.serviceWorker.register("/sw.js");
+  } catch (error) {
+    console.error("Service worker 注册失败", error);
+  }
 }
 
 function getSavedName() {
@@ -462,6 +492,21 @@ copyLinkBtn.onclick = async () => {
   }
 };
 
+installAppBtn.onclick = async () => {
+  if (deferredInstallPrompt) {
+    deferredInstallPrompt.prompt();
+    const result = await deferredInstallPrompt.userChoice;
+    if (result.outcome !== "accepted") {
+      installHintEl.textContent = "你可以稍后再点“安装应用”，或继续直接用网页打开。";
+    }
+    deferredInstallPrompt = null;
+    updateInstallUi();
+    return;
+  }
+
+  alert("安卓浏览器可直接安装；iPhone 请点 Safari 的“分享”按钮，再选择“添加到主屏幕”。");
+};
+
 startGameBtn.onclick = () => {
   if (!currentRoomState) {
     return;
@@ -494,6 +539,17 @@ socket.on("errorMessage", message => {
   alert(message);
 });
 
+window.addEventListener("beforeinstallprompt", event => {
+  event.preventDefault();
+  deferredInstallPrompt = event;
+  updateInstallUi();
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  updateInstallUi();
+});
+
 closeSettlementBtn.onclick = () => {
   hideSettlementModal();
 };
@@ -515,6 +571,8 @@ function bootstrapFromUrl() {
   if (room) {
     roomIdInput.value = room.toUpperCase();
   }
+  updateInstallUi();
+  registerServiceWorker();
   renderRoom();
 }
 
