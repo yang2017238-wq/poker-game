@@ -24,6 +24,10 @@ const potTextEl = document.getElementById("potText");
 const tablePotEl = document.getElementById("tablePot");
 const blindsTextEl = document.getElementById("blindsText");
 const handTextEl = document.getElementById("handText");
+const hudRoomCodeEl = document.getElementById("hudRoomCode");
+const hudStageTextEl = document.getElementById("hudStageText");
+const hudBlindsTextEl = document.getElementById("hudBlindsText");
+const hudHandTextEl = document.getElementById("hudHandText");
 const playersEl = document.getElementById("players");
 const communityCardsEl = document.getElementById("communityCards");
 const myHandEl = document.getElementById("myHand");
@@ -307,6 +311,10 @@ function updateHeaderInfo() {
   tablePotEl.textContent = currentRoomState?.pot ?? 0;
   blindsTextEl.textContent = currentRoomState ? `盲注 ${currentRoomState.blinds.small} / ${currentRoomState.blinds.big}` : "盲注 10 / 20";
   handTextEl.textContent = `第 ${currentRoomState?.handNumber || 0} 局`;
+  hudRoomCodeEl.textContent = currentRoomState?.roomId || "未加入";
+  hudStageTextEl.textContent = currentRoomState?.stageLabel || "等待开局";
+  hudBlindsTextEl.textContent = currentRoomState ? `${currentRoomState.blinds.small} / ${currentRoomState.blinds.big}` : "10 / 20";
+  hudHandTextEl.textContent = `第 ${currentRoomState?.handNumber || 0} 局`;
   winnerBannerEl.textContent = currentRoomState?.winnerText || "";
   winnerBannerEl.classList.toggle("visible", Boolean(currentRoomState?.winnerText));
 
@@ -327,7 +335,14 @@ function updateActionPanel() {
     });
     dockStageEl.textContent = "等待开局";
     dockCallEl.textContent = "跟注 0";
-    dockRaiseEl.textContent = "最小加注到 20";
+    dockRaiseEl.textContent = "下注到 20";
+    callBtn.textContent = "跟注";
+    dockCallBtn.textContent = "跟注";
+    raiseBtn.textContent = "下注 / 加注";
+    dockRaiseBtn.textContent = "下注 / 加注";
+    checkBtn.textContent = "过牌";
+    dockCheckBtn.textContent = "过牌";
+    betAmountInput.disabled = true;
     updateTurnBanner(null, false);
     return;
   }
@@ -341,19 +356,28 @@ function updateActionPanel() {
   const minTarget = currentRoomState.currentBet === 0
     ? currentRoomState.blinds.big
     : currentRoomState.currentBet + currentRoomState.minRaise;
+  const raiseLabel = currentRoomState.currentBet === 0 ? `下注到 ${minTarget}` : `加注到 ${minTarget}`;
+  const callLabel = toCall > 0 ? `跟注 ${toCall}` : "过牌";
 
   turnHintEl.textContent = myTurn ? "轮到你操作" : currentRoomState.gameStarted ? "等待其他玩家" : "等待房主开始";
   actionSummaryEl.textContent = currentRoomState.gameStarted
     ? `当前阶段 ${currentRoomState.stageLabel}，你还需跟注 ${toCall}，最小加注到 ${minTarget}。`
     : "房主点击“开始 / 下一局”后发牌。";
   dockStageEl.textContent = currentRoomState.stageLabel;
-  dockCallEl.textContent = `跟注 ${toCall}`;
-  dockRaiseEl.textContent = `最小加注到 ${minTarget}`;
+  dockCallEl.textContent = callLabel;
+  dockRaiseEl.textContent = raiseLabel;
+  callBtn.textContent = callLabel;
+  dockCallBtn.textContent = callLabel;
+  raiseBtn.textContent = raiseLabel;
+  dockRaiseBtn.textContent = raiseLabel;
+  checkBtn.textContent = toCall > 0 ? "不能过牌" : "过牌";
+  dockCheckBtn.textContent = toCall > 0 ? "不能过牌" : "过牌";
 
   betAmountInput.min = String(minTarget);
   if (Number(betAmountInput.value) < minTarget) {
     betAmountInput.value = String(minTarget);
   }
+  betAmountInput.disabled = !myTurn;
 
   const disableAction = !myTurn || me.folded || me.allIn || me.sittingOut;
   foldBtn.disabled = disableAction;

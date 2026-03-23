@@ -25,6 +25,8 @@ body {
   color: var(--text);
   font-family: "Trebuchet MS", "PingFang SC", "Microsoft YaHei", sans-serif;
   -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
   background:
     radial-gradient(circle at top, rgba(227, 185, 86, 0.15), transparent 28%),
     radial-gradient(circle at bottom right, rgba(22, 118, 95, 0.22), transparent 30%),
@@ -34,6 +36,7 @@ body {
 button,
 input {
   font: inherit;
+  touch-action: manipulation;
 }
 
 .app-shell {
@@ -128,15 +131,17 @@ input {
 }
 
 .layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(340px, 420px);
-  gap: 24px;
+  display: block;
 }
 
 .table-panel {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.table-stage {
+  position: relative;
 }
 
 .table-head,
@@ -209,6 +214,33 @@ input {
     inset 0 30px 60px rgba(255, 255, 255, 0.05),
     var(--shadow);
   overflow: hidden;
+}
+
+.table-hud {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  right: 18px;
+  z-index: 5;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.hud-chip {
+  min-width: 116px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(8, 18, 24, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+}
+
+.hud-chip span {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 4px;
 }
 
 .poker-table::before {
@@ -551,15 +583,30 @@ input {
 }
 
 .sidebar {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 6;
+  width: min(360px, 34vw);
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
 }
 
 .room-panel,
 .action-panel,
 .log-panel {
   min-width: 0;
+}
+
+.room-panel,
+.action-panel,
+.log-panel {
+  background: rgba(8, 18, 24, 0.72);
+}
+
+.log-panel {
+  max-height: 250px;
 }
 
 .field-grid {
@@ -664,10 +711,6 @@ input {
 }
 
 @media (max-width: 1160px) {
-  .layout {
-    grid-template-columns: 1fr;
-  }
-
   .hero {
     flex-direction: column;
     align-items: stretch;
@@ -675,6 +718,10 @@ input {
 
   .hero-status {
     min-width: 0;
+  }
+
+  .sidebar {
+    width: min(340px, 38vw);
   }
 }
 
@@ -714,6 +761,12 @@ input {
     padding: 14px;
     border-width: 5px;
     border-radius: 28px;
+  }
+
+  .table-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
   }
 
   .table-center,
@@ -778,6 +831,8 @@ input {
   }
 
   .sidebar {
+    position: static;
+    width: 100%;
     gap: 14px;
   }
 
@@ -908,8 +963,6 @@ input {
   }
 
   .layout {
-    grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.95fr);
-    gap: 10px;
     min-height: calc(100vh - 106px);
   }
 
@@ -920,6 +973,10 @@ input {
 
   .table-head {
     display: none;
+  }
+
+  .table-stage {
+    display: block;
   }
 
   .poker-table {
@@ -937,6 +994,24 @@ input {
   .table-center {
     width: min(340px, 60%);
     gap: 10px;
+  }
+
+  .table-hud {
+    top: 10px;
+    left: 10px;
+    right: 250px;
+    gap: 8px;
+  }
+
+  .hud-chip {
+    min-width: 88px;
+    padding: 7px 9px;
+    border-radius: 12px;
+  }
+
+  .hud-chip span {
+    font-size: 10px;
+    margin-bottom: 2px;
   }
 
   .community-row {
@@ -1036,6 +1111,10 @@ input {
   }
 
   .sidebar {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 228px;
     display: grid;
     grid-template-rows: auto 1fr;
     gap: 10px;
