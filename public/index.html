@@ -3,70 +3,117 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>德州扑克多人联机版</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta name="theme-color" content="#0f5b45" />
+  <title>公网德州扑克牌桌</title>
+  <link rel="stylesheet" href="style.css?v=20260323-1" />
 </head>
 <body>
-  <div class="container">
-    <h1>德州扑克多人联机版</h1>
-
-    <div class="panel">
-      <h2>进入游戏</h2>
-      <input id="playerName" type="text" placeholder="输入你的名字" maxlength="12" />
-      <button id="createRoomBtn">创建房间</button>
-
-      <div class="join-box">
-        <input id="roomIdInput" type="text" placeholder="输入房间号" />
-        <button id="joinRoomBtn">加入房间</button>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Public Texas Hold'em Table</p>
+        <h1>和朋友随时开一桌德州扑克</h1>
+        <p class="hero-copy">浏览器打开就能玩，支持建房、加入、下注、摊牌和移动端访问。</p>
       </div>
-
-      <div id="status" class="status"></div>
-      <div id="errorBox" class="error"></div>
-    </div>
-
-    <div class="panel">
-      <h2>房间信息</h2>
-      <div id="roomInfo"></div>
-      <div id="pot"></div>
-      <div id="currentBet"></div>
-      <div id="winner" class="winner"></div>
-    </div>
-
-    <div class="panel">
-      <h2>玩家列表</h2>
-      <div id="players" class="players"></div>
-    </div>
-
-    <div class="panel">
-      <h2>公共牌</h2>
-      <div id="communityCards" class="cards-row"></div>
-    </div>
-
-    <div class="panel">
-      <h2>我的手牌</h2>
-      <div id="myHand" class="cards-row"></div>
-    </div>
-
-    <div class="panel">
-      <h2>操作区</h2>
-      <div class="actions">
-        <button id="startGameBtn">开始游戏</button>
-        <button id="restartGameBtn">下一局</button>
-        <button id="checkBtn">过牌</button>
-        <button id="callBtn">跟注</button>
-        <input id="raiseAmount" type="number" placeholder="加注额" />
-        <button id="raiseBtn">加注</button>
-        <button id="foldBtn">弃牌</button>
+      <div class="hero-status">
+        <div class="status-card">
+          <span class="status-label">房间号</span>
+          <strong id="roomCode">未加入</strong>
+        </div>
+        <div class="status-card">
+          <span class="status-label">阶段</span>
+          <strong id="stageText">等待开局</strong>
+        </div>
+        <div class="status-card">
+          <span class="status-label">底池</span>
+          <strong id="potText">0</strong>
+        </div>
       </div>
-    </div>
+    </header>
 
-    <div class="panel">
-      <h2>操作记录</h2>
-      <ul id="log"></ul>
-    </div>
+    <main class="layout">
+      <section class="table-panel">
+        <div class="table-head">
+          <div>
+            <p class="section-kicker">牌桌</p>
+            <h2>真实牌桌视图</h2>
+          </div>
+          <div class="table-meta">
+            <span id="blindsText">盲注 10 / 20</span>
+            <span id="handText">第 0 局</span>
+          </div>
+        </div>
+
+        <div class="poker-table">
+          <div class="table-center">
+            <div class="pot-pill">底池 <strong id="tablePot">0</strong></div>
+            <div id="communityCards" class="cards-row community-row"></div>
+            <div id="winnerBanner" class="winner-banner"></div>
+          </div>
+          <div id="players" class="seats"></div>
+        </div>
+
+        <div class="my-hand-panel">
+          <div class="my-hand-header">
+            <h3>我的手牌</h3>
+            <span id="turnHint">等待加入房间</span>
+          </div>
+          <div id="myHand" class="cards-row hand-row"></div>
+        </div>
+      </section>
+
+      <aside class="sidebar">
+        <section class="panel">
+          <p class="section-kicker">加入牌局</p>
+          <h2>房间控制</h2>
+          <div class="field-grid">
+            <label class="field">
+              <span>昵称</span>
+              <input id="playerName" type="text" maxlength="12" placeholder="例如：Zhuanz" />
+            </label>
+            <label class="field">
+              <span>房间号</span>
+              <input id="roomIdInput" type="text" maxlength="6" placeholder="输入 6 位房间号" />
+            </label>
+          </div>
+          <div class="button-row">
+            <button id="createRoomBtn" class="btn btn-primary">创建房间</button>
+            <button id="joinRoomBtn" class="btn btn-secondary">加入房间</button>
+          </div>
+          <div class="button-row">
+            <button id="copyLinkBtn" class="btn btn-ghost">复制邀请链接</button>
+            <button id="startGameBtn" class="btn btn-primary">开始 / 下一局</button>
+          </div>
+          <p id="shareLink" class="share-link">邀请链接会显示在这里</p>
+        </section>
+
+        <section class="panel">
+          <p class="section-kicker">操作台</p>
+          <h2>本轮行动</h2>
+          <div id="actionSummary" class="summary-box">等待房主开始。</div>
+          <label class="field">
+            <span>下注总额</span>
+            <input id="betAmountInput" type="number" min="20" step="10" value="20" />
+          </label>
+          <div class="action-grid">
+            <button id="foldBtn" class="btn btn-danger">弃牌</button>
+            <button id="checkBtn" class="btn btn-secondary">过牌</button>
+            <button id="callBtn" class="btn btn-secondary">跟注</button>
+            <button id="raiseBtn" class="btn btn-primary">下注 / 加注</button>
+            <button id="allInBtn" class="btn btn-warning">全下</button>
+          </div>
+        </section>
+
+        <section class="panel">
+          <p class="section-kicker">牌桌动态</p>
+          <h2>行动日志</h2>
+          <div id="logList" class="log-list"></div>
+        </section>
+      </aside>
+    </main>
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="client.js"></script>
+  <script src="client.js?v=20260323-1"></script>
 </body>
 </html>
